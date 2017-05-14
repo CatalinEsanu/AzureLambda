@@ -39,6 +39,8 @@ PS > <directory>\invokeLambda.ps1
 ## Azure CosmosDB
 
 
-
-
 ## TODOs
+- Automate Event Hubs Throughput Units scaling.
+- Streamline script outputs
+- Add error handling
+- Add "Deployment Size" parameter and scale services accordingly.
