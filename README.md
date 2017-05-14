@@ -1,4 +1,4 @@
-## AzureLambda
+# AzureLambda
 Lambda Architecture Using Azure PaaS Services
 
 
@@ -18,25 +18,25 @@ Serving Layer - This layer is not included yet.
 
 The script automates all aspects of the deployment and creates a functional data pipeline in less than 1 hour (mostly the time it takes to provision the HDI cluster and the ACS cluster).
 
-## Usage 
+# Usage 
 
 ```
 PS > <directory>\invokeLambda.ps1
 ```
 
-## Component Overview
+# Component Overview
 
-# Azure Container Services (ACS)
+## Azure Container Services (ACS)
 
-# Azure Event Hubs 
+## Azure Event Hubs 
 
-# Azure Storage
+## Azure Storage
 
-# Spark on Azure HDInsight
+## Spark on Azure HDInsight
 
-# Azure Stream Analytics
+## Azure Stream Analytics
 
-# Azure CosmosDB
+## Azure CosmosDB
 
 
 
