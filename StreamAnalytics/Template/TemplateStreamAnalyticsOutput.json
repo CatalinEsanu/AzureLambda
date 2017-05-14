@@ -1,0 +1,18 @@
+{
+                      "Name": "OutputDB",
+                      "Properties": {
+                        "DataSource": {
+                          "Properties": {
+                            "AccountId": "<AccountId>",
+                            "AccountKey": "<AccountKey>",
+                            "CollectionNamePattern": "<CollectionNamePattern>",
+                            "Database": "<Database>",
+                            "DocumentId": "id",
+                            "PartitionKey": null
+                          },
+                          "Type": "Microsoft.Storage/DocumentDB"
+                        },
+                        "Diagnostics": null,
+                        "Serialization": null
+                      }
+                    }

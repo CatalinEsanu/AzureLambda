@@ -1,0 +1,57 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "namespaceName": {
+            "value": "lambdademons001"
+        },
+        "eventHubName": {
+            "value": "lambdademoeh001"
+        },
+        "consumerGroupName": {
+            "value": "lambdademocg001"
+        },
+        "archiveStorageAcc": {
+            "value": "eventhubsstracc0001"
+        },
+        "databaseAccountName": {
+            "value": "lambdademodocdbacc001"
+        },
+        "consistencyLevel": {
+            "value": "BoundedStaleness"
+        },
+        "maxStalenessPrefix": {
+            "value": 100
+        },
+        "maxIntervalInSeconds": {
+            "value": 5
+        },
+        "streamAnalyticsJobName": {
+            "value": "EventHubsToDocDBJob"
+        },
+        "numberOfStreamingUnits": {
+            "value": 12
+        },
+ "clusterName":{
+            "value":"lambdademosparkhdi001"
+        },
+        "sparkVersion":{
+            "value":"2.0"
+        },
+        "sparkStorageAccount":{
+            "value":"lambdaspark001"
+        },
+        "clusterLoginUserName":{
+            "value":"azureuser"
+        },
+        "clusterLoginPassword":{
+            "value":"Ab12345678!1"
+        },
+        "sshUserName":{
+            "value":"azureuserssh"
+        },
+        "sshPassword":{
+            "value":"Ab12345678!1"
+        }
+    }
+}

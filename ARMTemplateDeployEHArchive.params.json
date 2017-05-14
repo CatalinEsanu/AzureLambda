@@ -1,0 +1,33 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "namespaceName": {
+            "value": "lambdademons001"
+        },
+        "eventHubName": {
+            "value": "lambdademoeh001"
+        },
+        "consumerGroupName": {
+            "value": "lambdademocg001"
+        },
+        "archiveEnabled": {
+            "value": "true"
+        },
+        "archiveEncodingFormat": {
+            "value": "Avro"
+        },
+        "archiveTime": {
+            "value": 300
+        },
+        "archiveSize": {
+            "value": 314572800
+        },
+         "archiveStorageAcc": {
+            "value": "eventhubsstracc0001"
+        },
+         "archiveStorageContainer": {
+            "value": "eventhubsarchive"
+        }
+    }
+}

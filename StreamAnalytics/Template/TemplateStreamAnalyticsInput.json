@@ -1,0 +1,24 @@
+{
+    "Name": "InputEH",
+    "Properties": {
+        "DataSource": {
+            "Properties": {
+                "ConsumerGroupName": "<ConsumerGroupName>",
+                "EventHubName": "<EventHubName>",
+                "ServiceBusNamespace": "<ServiceBusNamespace>",
+                "SharedAccessPolicyKey": "<SharedAccessPolicyKey>",
+                "SharedAccessPolicyName": "<SharedAccessPolicyName>"
+            },
+            "Type": "Microsoft.ServiceBus/EventHub"
+        },
+        "Diagnostics": null,
+        "Serialization": {
+            "Properties": {
+                "Encoding": "UTF8",
+                "Format": null
+            },
+            "Type": "Json"
+        },
+        "Type": "Stream"
+    }
+}

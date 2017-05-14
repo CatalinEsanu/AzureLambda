@@ -1,0 +1,139 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "namespaceName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the EventHub namespace"
+            }
+        },
+        "eventHubName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Event Hub"
+            }
+        },
+        "consumerGroupName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Consumer Group"
+            }
+        },
+        "archiveEnabled": {
+            "type": "string",
+            "defaultValue": "true",
+            "allowedValues": [
+                "false",
+                "true"
+            ],
+            "metadata": {
+                "description": "Enable or disable the Archive for your Event Hub"
+            }
+        },
+        "archiveEncodingFormat": {
+            "type": "string",
+            "defaultValue": "Avro",
+            "allowedValues": [
+                "Avro"
+            ],
+            "metadata": {
+                "description": "The encoding format Archive serializes the EventData when archiving to your storage"
+            }
+        },
+        "archiveTime": {
+            "type": "int",
+            "defaultValue": 300,
+            "minValue": 60,
+            "maxValue": 900,
+            "metadata": {
+                "description": "the time window in seconds for the archival"
+            }
+        },
+        "archiveSize": {
+            "type": "int",
+            "defaultValue": 314572800,
+            "minValue": 10485760,
+            "maxValue": 524288000,
+            "metadata": {
+                "description": "the size window in bytes for archival"
+            }
+        },
+        "archiveStorageAcc": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage account used by Event Hubs Archive."
+            }
+        },
+        "archiveStorageContainer": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage container used by Event Hubs Archive."
+            }
+        }
+    },
+    "variables": {
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2015-08-01",
+        "defaultSASKeyName": "RootManageSharedAccessKey",
+        "authRuleResourceId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('namespaceName'), variables('defaultSASKeyName'))]",
+        "offerType": "Standard",
+        "defaultStorageAccount": {
+            "name": "[uniqueString(resourceGroup().id)]",
+            "type": "Standard_LRS"
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "2015-08-01",
+            "name": "[parameters('namespaceName')]",
+            "type": "Microsoft.EventHub/Namespaces",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Standard",
+                "tier": "Standard"
+            },
+            "resources": [
+                {
+                    "apiVersion": "2015-08-01",
+                    "name": "[parameters('eventHubName')]",
+                    "type": "EventHubs",
+                    "dependsOn": [
+                        "[concat('Microsoft.EventHub/namespaces/', parameters('namespaceName'))]"
+                    ],
+                    "properties": {
+                        "path": "[parameters('eventHubName')]",
+                        "MessageRetentionInDays": 7,
+                        "PartitionCount": 32,
+                        "ArchiveDescription": {
+                            "enabled": "[parameters('archiveEnabled')]",
+                            "encoding": "[parameters('archiveEncodingFormat')]",
+                            "intervalInSeconds": "[parameters('archiveTime')]",
+                            "sizeLimitInBytes": "[parameters('archiveSize')]",
+                            "destination": {
+                                "name": "EventHubArchive.AzureBlockBlob",
+                                "properties": {
+                                    "StorageAccountResourceId": "[resourceId('Microsoft.Storage/storageAccounts', parameters('archiveStorageAcc'))]",
+                                    "BlobContainer": "[parameters('archiveStorageContainer')]",
+                                    "ArchiveNameFormat": "{Namespace}/{EventHub}/{PartitionId}/{Year}/{Month}/{Day}/{Hour}/{Minute}/{Second}"
+                                }
+                            }
+                        }
+                    },
+                    "resources": [
+                        {
+                            "apiVersion": "2015-08-01",
+                            "name": "[parameters('consumerGroupName')]",
+                            "type": "ConsumerGroups",
+                            "dependsOn": [
+                                "[parameters('eventHubName')]"
+                            ],
+                            "properties": {}
+                        }
+                    ]
+                }
+            ]
+        }
+    ],
+    "outputs": {}
+}

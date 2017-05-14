@@ -1,0 +1,357 @@
+{
+    "$schema": "http://schema.management.azure.com/schemas/2014-04-01-preview/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "namespaceName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the EventHub namespace"
+            }
+        },
+        "eventHubName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Event Hub"
+            }
+        },
+        "consumerGroupName": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of the Consumer Group"
+            }
+        },
+        "databaseAccountName": {
+            "type": "string",
+            "metadata": {
+                "description": "The DocumentDB database account name."
+            }
+        },
+        "archiveStorageAcc": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage account used by Event Hubs Archive."
+            }
+        },
+        "sparkStorageAccount": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage account used by Spark HDI Cluster."
+            }
+        },
+        "consistencyLevel": {
+            "type": "string",
+            "allowedValues": [
+                "Eventual",
+                "Strong",
+                "Session",
+                "BoundedStaleness"
+            ],
+            "defaultValue": "Session",
+            "metadata": {
+                "description": "The DocumentDB deault consistency level for this account."
+            }
+        },
+        "maxStalenessPrefix": {
+            "type": "int",
+            "minValue": 10,
+            "maxValue": 1000,
+            "defaultValue": 10,
+            "metadata": {
+                "description": "When consistencyLevel is set to BoundedStaleness, then this value is required, else it can be ignored."
+            }
+        },
+        "maxIntervalInSeconds": {
+            "type": "int",
+            "minValue": 5,
+            "maxValue": 600,
+            "defaultValue": 5,
+            "metadata": {
+                "description": "When consistencyLevel is set to BoundedStaleness, then this value is required, else it can be ignored."
+            }
+        },
+        "streamAnalyticsJobName": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 63,
+            "metadata": {
+                "description": "Stream Analytics Job Name, can contain alphanumeric characters and hypen and must be 3-63 characters long"
+            }
+        },
+        "numberOfStreamingUnits": {
+            "type": "int",
+            "minValue": 1,
+            "maxValue": 48,
+            "allowedValues": [
+                1,
+                3,
+                6,
+                12,
+                18,
+                24,
+                30,
+                36,
+                42,
+                48
+            ],
+            "metadata": {
+                "description": "Number of Streaming Units"
+            }
+        },
+        "clusterName": {
+            "type": "string",
+            "metadata": {
+                "description": "The name of the HDInsight cluster to create."
+            }
+        },
+        "sparkVersion": {
+            "type": "string",
+            "defaultValue": "2.0",
+            "allowedValues": [
+                "1.6",
+                "2.0"
+            ],
+            "metadata": {
+                "description": "Spark version to be installed in the cluster. This parameter only applies to Spark cluster type in HDI 3.5 and will fail for other cluster types and other cluster versions."
+            }
+        },
+        "clusterLoginUserName": {
+            "type": "string",
+            "defaultValue": "admin",
+            "metadata": {
+                "description": "These credentials can be used to submit jobs to the cluster and to log into cluster dashboards."
+            }
+        },
+        "clusterLoginPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "sshUserName": {
+            "type": "string",
+            "defaultValue": "sshuser",
+            "metadata": {
+                "description": "These credentials can be used to remotely access the cluster."
+            }
+        },
+        "sshPassword": {
+            "type": "securestring",
+            "metadata": {
+                "description": "The password must be at least 10 characters in length and must contain at least one digit, one non-alphanumeric character, and one upper or lower case letter."
+            }
+        },
+        "archiveStorageAcc": {
+            "type": "string",
+            "metadata": {
+                "description": "Storage account used by Event Hubs Archive."
+            }
+        }
+    },
+    "variables": {
+        "location": "[resourceGroup().location]",
+        "apiVersion": "2015-08-01",
+        "defaultSASKeyName": "RootManageSharedAccessKey",
+        "authRuleResourceId": "[resourceId('Microsoft.EventHub/namespaces/authorizationRules', parameters('namespaceName'), variables('defaultSASKeyName'))]",
+        "offerType": "Standard",
+        "defaultStorageAccount": {
+            "name": "[uniqueString(resourceGroup().id)]",
+            "type": "Standard_LRS"
+        }
+    },
+    "resources": [
+        {
+            "apiVersion": "2015-08-01",
+            "name": "[parameters('namespaceName')]",
+            "type": "Microsoft.EventHub/Namespaces",
+            "location": "[variables('location')]",
+            "sku": {
+                "name": "Standard",
+                "tier": "Standard"
+            },
+            "resources": [
+                {
+                    "apiVersion": "2015-08-01",
+                    "name": "[parameters('eventHubName')]",
+                    "type": "EventHubs",
+                    "dependsOn": [
+                        "[concat('Microsoft.EventHub/namespaces/', parameters('namespaceName'))]",
+                        "[concat('Microsoft.Storage/storageAccounts/',parameters('sparkStorageAccount'))]"
+                    ],
+                    "properties": {
+                        "path": "[parameters('eventHubName')]",
+                        "MessageRetentionInDays": 7,
+                        "PartitionCount": 32
+                    },
+                    "resources": [
+                        {
+                            "apiVersion": "2015-08-01",
+                            "name": "[parameters('consumerGroupName')]",
+                            "type": "ConsumerGroups",
+                            "dependsOn": [
+                                "[parameters('eventHubName')]"
+                            ],
+                            "properties": {}
+                        }
+                    ]
+                }
+            ]
+        },
+        {
+            "apiVersion": "2015-04-08",
+            "type": "Microsoft.DocumentDB/databaseAccounts",
+            "name": "[parameters('databaseAccountName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "name": "[parameters('databaseAccountName')]",
+                "databaseAccountOfferType": "[variables('offerType')]",
+                "consistencyPolicy": {
+                    "defaultConsistencyLevel": "[parameters('consistencyLevel')]",
+                    "maxStalenessPrefix": "[parameters('maxStalenessPrefix')]",
+                    "maxIntervalInSeconds": "[parameters('maxIntervalInSeconds')]"
+                },
+                "locations": [
+                    {
+                        "locationName": "[resourceGroup().location]",
+                        "failoverPriority": 0
+                    }
+                ]
+            }
+        },
+        {
+            "type": "Microsoft.StreamAnalytics/StreamingJobs",
+            "apiVersion": "2016-03-01",
+            "name": "[parameters('streamAnalyticsJobName')]",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "sku": {
+                    "name": "standard"
+                },
+                "outputErrorPolicy": "stop",
+                "eventsOutOfOrderPolicy": "adjust",
+                "eventsOutOfOrderMaxDelayInSeconds": 0,
+                "eventsLateArrivalMaxDelayInSeconds": 5,
+                "dataLocale": "en-US",
+                "inputs": [],
+                "transformation": {
+                    "name": "Transformation",
+                    "properties": {
+                        "streamingUnits": "[parameters('numberOfStreamingUnits')]",
+                        "query": "SELECT\r\n    *\r\nINTO\r\n    [OutputDB]\r\nFROM\r\n    [InputEH] PARTITION BY PartitionId"
+                    }
+                }
+            }
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[parameters('archiveStorageAcc')]",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2016-01-01",
+            "sku": {
+                "name": "[variables('defaultStorageAccount').type]"
+            },
+            "kind": "Storage",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.Storage/storageAccounts",
+            "name": "[parameters('sparkStorageAccount')]",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2016-01-01",
+            "sku": {
+                "name": "[variables('defaultStorageAccount').type]"
+            },
+            "kind": "Storage",
+            "properties": {}
+        },
+        {
+            "type": "Microsoft.HDInsight/clusters",
+            "name": "[parameters('clusterName')]",
+            "location": "[resourceGroup().location]",
+            "apiVersion": "2015-03-01-preview",
+            "dependsOn": [
+                "[concat('Microsoft.Storage/storageAccounts/',parameters('sparkStorageAccount'))]"
+            ],
+            "tags": {},
+            "properties": {
+                "clusterVersion": "3.5",
+                "osType": "Linux",
+                "tier": "Standard",
+                "clusterDefinition": {
+                    "kind": "spark",
+                    "componentVersion": {
+                        "Spark": "[parameters('sparkVersion')]"
+                    },
+                    "configurations": {
+                        "gateway": {
+                            "restAuthCredential.isEnabled": true,
+                            "restAuthCredential.username": "[parameters('clusterLoginUserName')]",
+                            "restAuthCredential.password": "[parameters('clusterLoginPassword')]"
+                        }
+                    }
+                },
+                "storageProfile": {
+                    "storageaccounts": [
+                        {
+                            "name": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', parameters('sparkStorageAccount')), '2016-01-01').primaryEndpoints.blob,'https://',''),'/','')]",
+                            "isDefault": true,
+                            "container": "[parameters('clusterName')]",
+                            "key": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('sparkStorageAccount')), '2016-01-01').keys[0].value]"
+                        },
+                        {
+                            "name": "[replace(replace(reference(resourceId('Microsoft.Storage/storageAccounts', parameters('archiveStorageAcc')), '2016-01-01').primaryEndpoints.blob,'https://',''),'/','')]",
+                            "key": "[listKeys(resourceId('Microsoft.Storage/storageAccounts', parameters('archiveStorageAcc')), '2016-01-01').keys[0].value]"
+                        }
+                    ]
+                },
+                "computeProfile": {
+                    "roles": [
+                        {
+                            "name": "headnode",
+                            "targetInstanceCount": "2",
+                            "hardwareProfile": {
+                                "vmSize": "Standard_D3_v2"
+                            },
+                            "osProfile": {
+                                "linuxOperatingSystemProfile": {
+                                    "username": "[parameters('sshUserName')]",
+                                    "password": "[parameters('sshPassword')]"
+                                }
+                            }
+                        },
+                        {
+                            "name": "workernode",
+                            "targetInstanceCount": "2",
+                            "hardwareProfile": {
+                                "vmSize": "Standard_D3_v2"
+                            },
+                            "osProfile": {
+                                "linuxOperatingSystemProfile": {
+                                    "username": "[parameters('sshUserName')]",
+                                    "password": "[parameters('sshPassword')]"
+                                }
+                            }
+                        }
+                    ]
+                }
+            }
+        }
+    ],
+    "outputs": {
+        "NamespaceConnectionString": {
+            "type": "string",
+            "value": "[listkeys(variables('authRuleResourceId'), variables('apiVersion')).primaryConnectionString]"
+        },
+        "SharedAccessPolicyPrimaryKey": {
+            "type": "string",
+            "value": "[listkeys(variables('authRuleResourceId'), variables('apiVersion')).primaryKey]"
+        },
+        "storage": {
+            "type": "object",
+            "value": "[reference(resourceId('Microsoft.Storage/storageAccounts', parameters('sparkStorageAccount')))]"
+        },
+        "cluster": {
+            "type": "object",
+            "value": "[reference(resourceId('Microsoft.HDInsight/clusters',parameters('clusterName')))]"
+        }
+    }
+}
