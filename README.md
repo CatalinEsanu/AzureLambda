@@ -2,7 +2,7 @@
 Lambda Architecture Using Azure PaaS Services
 
 
-<img src="https://github.com/CatalinEsanu/AzureLambda/blob/master/Desc/overview.png" width="100">
+<img src="https://github.com/CatalinEsanu/AzureLambda/blob/master/Desc/overview.png" width="1000">
 
 This process create an ACS cluster that has several containers on it writing to Event Hubs.
 From there the flow forks to:
