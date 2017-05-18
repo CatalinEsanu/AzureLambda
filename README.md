@@ -11,8 +11,7 @@ From there the flow forks to:
 Batch Layer – Event Hubs writes to Storage Account with Event Hubs Archive feature, then an hourly spark jobs runs over the avro files produced during that hour and consolidates them into parquet files.
 These files can be used for offline reporting, data exploration, hive tables, etc.
 
-Speed Layer – Stream Analytics reads from Event Hubs and writes the data to CosmosDB (using the native API).
-There data can be read and used for online process.
+Speed Layer – Stream Analytics reads from Event Hubs and writes the data to CosmosDB (using the native API), from which data can be read and used for online processing.
 
 Serving Layer - This layer is not included yet.
 
