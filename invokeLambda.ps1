@@ -2,10 +2,26 @@
 # Install Prerequisites
 ###############################################
 
+if ( -Not ( ( Get-Module -ListAvailable AzureRM.Compute) -and
+( Get-Module -ListAvailable AzureRM.EventHub) -and
+( Get-Module -ListAvailable AzureRM.HDInsight) -and
+( Get-Module -ListAvailable AzureRM.IotHub) -and
+( Get-Module -ListAvailable AzureRM.Network) -and
+( Get-Module -ListAvailable AzureRM.Profile) -and
+( Get-Module -ListAvailable AzureRM.Resources) -and
+( Get-Module -ListAvailable AzureRM.ServiceBus) -and
+( Get-Module -ListAvailable AzureRM.Storage) -and
+( Get-Module -ListAvailable AzureRM.StreamAnalytics)
+ ))
+{
+    Write-Output 'I am missing some prereqs - installing'
+    Install-Module AzureRM -Force
+    Install-AzureRM -AllowClobber
+    Import-Module AzureRM
 
-Install-Module AzureRM
-Install-AzureRM
-Import-Module AzureRM
+}
+
+
 
 ###############################################
 # Login
@@ -51,6 +67,8 @@ $geoLocation="West Europe"
 $templateFile=$runDir + "\ARMTemplates\ARMTemplateDeployLambda.json" # Do not change
 $paramsFile=$runDir + "\ARMTemplateDeployLambda.params.json" # Do not change
 
+New-Item -ItemType Directory -Force -Path .\runtime
+
 # Stream Analytics
 $saStreamAnalyticsJobName = "SAJob" + $uniqueId
 $saNumberOfStreamingUnits = 12
@@ -65,11 +83,11 @@ $ehNamespaceName =  "lambdans" + $uniqueId
 $ehEventHubName = "lambdaeh" + $uniqueId
 $ehConsumerGroupName = "lambdacg" + $uniqueId
 $ehArchiveStorageAcc = "ehacc" + $uniqueId
-$ehArchiveEnabled = "true"
-$ehArchiveEncodingFormat = "Avro"
 $ehArchiveTime = 300
 $ehArchiveSize = 314572800
-$ehArchiveStorageContainer = "eventhubsarchive"
+$ehArchiveEnabled = "true" # Do not change
+$ehArchiveEncodingFormat = "Avro" # Do not change
+$ehArchiveStorageContainer = "eventhubsarchive" # Do not change
 $ehSharedAccessPolicyName="RootManageSharedAccessKey" # Do not change
 
 $ehArchTemplateFile=$runDir +"\ARMTemplates\ARMTemplateDeployEHArchive.json" # Do not change
@@ -80,9 +98,9 @@ $docdbDatabaseAccountName = "lambdadoc" + $uniqueId
 $docdbConsistencyLevel = "BoundedStaleness"
 $docdbMaxStalenessPrefix= 100
 $docdbMaxIntervalInSeconds = 5
-$docdbExecutables = ".\Azure-DocumentDB-Powershell-Cmdlets-master\Azrdocdb\Azrdocdb1\bin\Debug\"
 $docdbDBName="DB1" 
 $docdbCollName="coll1"
+$docdbExecutables = ".\cosmos-cmdlets\" # Do not change
 
 # HDInsight 
 $hdiClusterName = "lambdahdi" + $uniqueId
@@ -91,9 +109,8 @@ $hdiSparkStorageAccount = "hdiacc" + $uniqueId
 $hdiClusterLoginUserName = "azureuser"
 $hdiClusterLoginPassword = "Ab12345678!1"
 $hdiSshUserName = "azureuserssh"
-$hdiSshPassword = "Ab12345678!1"
-$hdiJobOutputContainer = "joboutput"
-$hdiScriptsContainer = "hdiscripts"
+$hdiJobOutputContainer = "joboutput" # Do not change
+$hdiScriptsContainer = "hdiscripts" # Do not change
 $hdiFilesLoc = $runDir+"\HDInsight" # Do not change
 $hdiAvroScriptTemplate = $hdiFilesLoc + "\process_avro_template.py" # Do not change
 $hdiAvroScriptShortName = "process_avro.py" # Do not change
@@ -108,7 +125,7 @@ $dcosAgentCount = 1
 $dcosAgentVMSize = "Standard_A3"
 $dcosLinuxAdminUsername = "azureuser"
 $dcosOrchestratorType = "DCOS" # Do not change
-$dcosMasterCount = 1
+$dcosMasterCount = 3
 $dcosSshRSAPublicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAlwUbj59tAoinx6BqJXID4Ej2Xa5m3tsI3jQpVDOiyniR6hvIS+quuTayc2cyB6w3vyLXdFBwWvdPOuxxNoGpzA+N0k9uBym216oa4uLbxiCmuo6rbTiseYBjS/7Y/NCwLsAPbqyRdbyGVgp7gmRusVS3gEXt8mRGEszSAOYYKXq8vsOvzoq0BgpOypLQojKmkw7+YXleMwYJ8ac9EM6R8w3sECJpPR7dyOQJn6ZA+eHvMft87lo/Q0xu1yS1UB4RDoNwF3E3e4ej+37pAacRr+IHHPrFW8UKV9lmpruDEf/4k8njmatE8Mhwk31v/OGCri2gDAMVE+hQlm1cFjum1Q== rsa-key-20170430"
     
 $dcosDeploymentTemplateURI = "https://raw.githubusercontent.com/azure/azure-quickstart-templates/master/101-acs-dcos/azuredeploy.json " # Do not change
@@ -130,7 +147,7 @@ New-AzureRmResourceGroup -Name $resourceGroupName -Location $geoLocation
 
 
 #Deploy the template
-Write-Output "Deploying initial template"
+Write-Output "Deploying initial template - this can take about 20 minutes (or more)"
 
 #$initialTemplateResult=(New-AzureRmResourceGroupDeployment -Name $deploymentName -ResourceGroupName $resourceGroupName -TemplateFile $templateFile -TemplateParameterFile $paramsFile)
 $initialTemplateResult=(New-AzureRmResourceGroupDeployment -Name $deploymentName -ResourceGroupName $resourceGroupName -TemplateFile $templateFile `
@@ -301,7 +318,7 @@ write-output $hdiScriptActionResult.OperationState
 # Configure Loading Environment
 ###############################################
 
-Write-Output "Deploying Load environment"
+Write-Output "Deploying Load environment - this can take 20 minutes (or more)"
 
 cp $dcosInstanceTemplateFile $dcosInstanceFile
 (Get-Content $dcosInstanceFile).replace('<<EH_NAMESPACE>>', $ehNamespaceName) | Set-Content $dcosInstanceFile
