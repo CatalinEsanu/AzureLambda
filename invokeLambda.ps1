@@ -21,6 +21,25 @@ if ( -Not ( ( Get-Module -ListAvailable AzureRM.Compute) -and
 
 }
 
+$title = "LOADER Environment"
+$message = "Do you want me to create a load environemnt that will push data into the system?"
+
+$yes = New-Object System.Management.Automation.Host.ChoiceDescription "&Yes", `
+    "Creates DC/OS cluster."
+
+$no = New-Object System.Management.Automation.Host.ChoiceDescription "&No", `
+    "Does not create DC/OS cluster."
+
+$options = [System.Management.Automation.Host.ChoiceDescription[]]($yes, $no)
+
+$isCreateLoader = $host.ui.PromptForChoice($title, $message, $options, 0) 
+
+switch ($isCreateLoader)
+    {
+        0 {"You selected Yes."}
+        1 {"You selected No."}
+    }
+
 
 
 ###############################################
@@ -56,7 +75,7 @@ Get-AzureRmContext
 
 
 $runDir=split-path -parent $MyInvocation.MyCommand.Definition # "C:\Users\cesanu\OneDrive for Business\DOCS\Templates\Lambda"
-#$runDir="C:\Users\cesanu\OneDrive - Microsoft\DOCS\Templates\Lambda"
+#$runDir="C:\Users\xxx\Desktop\AzureLambda-master\AzureLambda-master"
 cd $runDir
 $uniqueId = Get-Random -minimum 10000 -maximum 99999
 $resourceGroupName="Lambda" + $uniqueId + "-RG"
@@ -104,7 +123,8 @@ $docdbExecutables = ".\cosmos-cmdlets\" # Do not change
 
 # HDInsight 
 $hdiClusterName = "lambdahdi" + $uniqueId
-$hdiSparkVersion = "2.0"
+$hdiSparkVersion = "2.1"
+$hdiClusterVersion = "3.6"
 $hdiSparkStorageAccount = "hdiacc" + $uniqueId
 $hdiClusterLoginUserName = "azureuser"
 $hdiClusterLoginPassword = "Ab12345678!1"
@@ -125,9 +145,9 @@ $dcosAgentCount = 1
 $dcosAgentVMSize = "Standard_A3"
 $dcosLinuxAdminUsername = "azureuser"
 $dcosOrchestratorType = "DCOS" # Do not change
-$dcosMasterCount = 3
+$dcosMasterCount = 1
 $dcosSshRSAPublicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAlwUbj59tAoinx6BqJXID4Ej2Xa5m3tsI3jQpVDOiyniR6hvIS+quuTayc2cyB6w3vyLXdFBwWvdPOuxxNoGpzA+N0k9uBym216oa4uLbxiCmuo6rbTiseYBjS/7Y/NCwLsAPbqyRdbyGVgp7gmRusVS3gEXt8mRGEszSAOYYKXq8vsOvzoq0BgpOypLQojKmkw7+YXleMwYJ8ac9EM6R8w3sECJpPR7dyOQJn6ZA+eHvMft87lo/Q0xu1yS1UB4RDoNwF3E3e4ej+37pAacRr+IHHPrFW8UKV9lmpruDEf/4k8njmatE8Mhwk31v/OGCri2gDAMVE+hQlm1cFjum1Q== rsa-key-20170430"
-    
+$dcosNATRuleName = "HTTPNATRULE"    
 $dcosDeploymentTemplateURI = "https://raw.githubusercontent.com/azure/azure-quickstart-templates/master/101-acs-dcos/azuredeploy.json " # Do not change
 $dcosFilesLoc = $runDir + "\dcos" # Do not change
 $dcosDeploymentTemplateParams = ".\ARMTemplateDCOS.params.json" # Do not change
@@ -168,6 +188,7 @@ $initialTemplateResult=(New-AzureRmResourceGroupDeployment -Name $deploymentName
     -clusterLoginPassword (ConvertTo-SecureString $hdiClusterLoginPassword -AsPlainText -Force) `
     -sshUserName $hdiSshUserName `
     -sshPassword (ConvertTo-SecureString $hdiClusterLoginPassword -AsPlainText -Force) `
+    -clusterVersion $hdiClusterVersion `
 )
 
 
@@ -318,66 +339,71 @@ write-output $hdiScriptActionResult.OperationState
 # Configure Loading Environment
 ###############################################
 
-Write-Output "Deploying Load environment - this can take 20 minutes (or more)"
+if ($isCreateLoader -eq 0)
+{
+    Write-Output "Deploying Load environment - this can take 20 minutes (or more)"
 
-cp $dcosInstanceTemplateFile $dcosInstanceFile
-(Get-Content $dcosInstanceFile).replace('<<EH_NAMESPACE>>', $ehNamespaceName) | Set-Content $dcosInstanceFile
-(Get-Content $dcosInstanceFile).replace('<<EH_NAME>>', $ehEventHubName) | Set-Content $dcosInstanceFile
-(Get-Content $dcosInstanceFile).replace('<<EH_SHARED_ACCESS_KEY_NAME>>', $ehSharedAccessPolicyName) | Set-Content $dcosInstanceFile
-(Get-Content $dcosInstanceFile).replace('<<EH_SHARED_ACCESS_KEY_VALUE>>', $ehSharedAccessPolicyKey) | Set-Content $dcosInstanceFile
+    cp $dcosInstanceTemplateFile $dcosInstanceFile
+    (Get-Content $dcosInstanceFile).replace('<<EH_NAMESPACE>>', $ehNamespaceName) | Set-Content $dcosInstanceFile
+    (Get-Content $dcosInstanceFile).replace('<<EH_NAME>>', $ehEventHubName) | Set-Content $dcosInstanceFile
+    (Get-Content $dcosInstanceFile).replace('<<EH_SHARED_ACCESS_KEY_NAME>>', $ehSharedAccessPolicyName) | Set-Content $dcosInstanceFile
+    (Get-Content $dcosInstanceFile).replace('<<EH_SHARED_ACCESS_KEY_VALUE>>', $ehSharedAccessPolicyKey) | Set-Content $dcosInstanceFile
 
-New-AzureRmResourceGroup -Name $loaderResourceGroupName -Location $geoLocation
+    New-AzureRmResourceGroup -Name $loaderResourceGroupName -Location $geoLocation
 
 
-#$dcosClusterOutput=(New-AzureRmResourceGroupDeployment -Name $loaderDeploymentName -ResourceGroupName $loaderResourceGroupName -TemplateUri $dcosDeploymentTemplateURI -TemplateParameterFile $dcosDeploymentTemplateParams).Outputs
-$dcosClusterOutput=(New-AzureRmResourceGroupDeployment -Name $loaderDeploymentName -ResourceGroupName $loaderResourceGroupName -TemplateUri $dcosDeploymentTemplateURI `
-    -dnsNamePrefix $dcosDnsNamePrefix `
-    -agentCount $dcosAgentCount `
-    -agentVMSize $dcosAgentVMSize `
-    -linuxAdminUsername $dcosLinuxAdminUsername `
-    -orchestratorType $dcosOrchestratorType `
-    -masterCount $dcosMasterCount `
-    -sshRSAPublicKey $dcosSshRSAPublicKey `
-)
+    #$dcosClusterOutput=(New-AzureRmResourceGroupDeployment -Name $loaderDeploymentName -ResourceGroupName $loaderResourceGroupName -TemplateUri $dcosDeploymentTemplateURI -TemplateParameterFile $dcosDeploymentTemplateParams).Outputs
+    $dcosClusterOutput=(New-AzureRmResourceGroupDeployment -Name $loaderDeploymentName -ResourceGroupName $loaderResourceGroupName -TemplateUri $dcosDeploymentTemplateURI `
+        -dnsNamePrefix $dcosDnsNamePrefix `
+        -agentCount $dcosAgentCount `
+        -agentVMSize $dcosAgentVMSize `
+        -linuxAdminUsername $dcosLinuxAdminUsername `
+        -orchestratorType $dcosOrchestratorType `
+        -masterCount $dcosMasterCount `
+        -sshRSAPublicKey $dcosSshRSAPublicKey `
+    )
   
 
 
-$masterURL= $dcosClusterOutput.Outputs.masterFQDN.Value
+    $masterURL= $dcosClusterOutput.Outputs.masterFQDN.Value
 
-$masterNSGName=(Get-AzureRmNetworkSecurityGroup -ResourceGroupName $loaderResourceGroupName).Name | sls "master"
-$masterNSG= Get-AzureRmNetworkSecurityGroup -ResourceGroupName $loaderResourceGroupName -Name $masterNSGName
+    $masterNSGName=(Get-AzureRmNetworkSecurityGroup -ResourceGroupName $loaderResourceGroupName).Name | sls "master"
+    $masterNSG= Get-AzureRmNetworkSecurityGroup -ResourceGroupName $loaderResourceGroupName -Name $masterNSGName
 
-Add-AzureRmNetworkSecurityRuleConfig -NetworkSecurityGroup $masterNSG `
-    -Name all-rule `
-    -Description "Allow any" `
-    -Access Allow `
-    -Protocol Tcp `
-    -Direction Inbound `
-    -Priority 100 `
-    -SourceAddressPrefix * `
-    -SourcePortRange * `
-    -DestinationAddressPrefix * `
-    -DestinationPortRange *
-
-
-Set-AzureRmNetworkSecurityGroup -NetworkSecurityGroup $masterNSG
+    Add-AzureRmNetworkSecurityRuleConfig -NetworkSecurityGroup $masterNSG `
+        -Name all-rule `
+        -Description "Allow any" `
+        -Access Allow `
+        -Protocol Tcp `
+        -Direction Inbound `
+        -Priority 100 `
+        -SourceAddressPrefix * `
+        -SourcePortRange * `
+        -DestinationAddressPrefix * `
+        -DestinationPortRange *
 
 
-$masterLBName=(get-AzureRmLoadBalancer -ResourceGroupName $loaderResourceGroupName).Name | sls "master"
-$masterLB=get-AzureRmLoadBalancer -ResourceGroupName $loaderResourceGroupName -Name $masterLBName
-$masterLB | Add-AzureRmLoadBalancerInboundNatRuleConfig -Name "HTTPNATRULE" -FrontendIPConfiguration $masterLB.FrontendIpConfigurations[0] -Protocol "Tcp" -FrontendPort 80 -BackendPort 80  | Set-AzureRmLoadBalancer 
-
-$masterNICName=((Get-AzureRmNetworkInterface -ResourceGroupName $loaderResourceGroupName ).name | sls "master")[0]
-$masterNIC=Get-AzureRmNetworkInterface -ResourceGroupName $loaderResourceGroupName -Name $masterNICName
-$masterNIC.IpConfigurations[0].LoadBalancerInboundNatRules.Add((get-AzureRmLoadBalancer -ResourceGroupName $loaderResourceGroupName -Name $masterLBName).InboundNatRules[4]) 
-Set-AzureRmNetworkInterface -NetworkInterface $masterNIC
-
-$dcosSubmitURI= "http://"+$masterURL+"/marathon/v2/apps/"
-
-Invoke-WebRequest -Method post -Uri $dcosSubmitURI -ContentType application/json -InFile $dcosInstanceFile # '.\dcos\deployment.json'
+    Set-AzureRmNetworkSecurityGroup -NetworkSecurityGroup $masterNSG
 
 
+    $masterLBName=(get-AzureRmLoadBalancer -ResourceGroupName $loaderResourceGroupName).Name | sls "master"
+    $masterLB=get-AzureRmLoadBalancer -ResourceGroupName $loaderResourceGroupName -Name $masterLBName
+    $masterLB | Add-AzureRmLoadBalancerInboundNatRuleConfig -Name $dcosNATRuleName -FrontendIPConfiguration $masterLB.FrontendIpConfigurations[0] -Protocol "Tcp" -FrontendPort 80 -BackendPort 80  | Set-AzureRmLoadBalancer 
 
+    $masterNICName=((Get-AzureRmNetworkInterface -ResourceGroupName $loaderResourceGroupName ).name | sls "master")[0]
+    $masterNIC=Get-AzureRmNetworkInterface -ResourceGroupName $loaderResourceGroupName -Name $masterNICName
+    $masterNIC.IpConfigurations[0].LoadBalancerInboundNatRules.Add((Get-AzureRmLoadBalancerInboundNatRuleConfig -LoadBalancer $masterLB -Name $dcosNATRuleName)) 
+    Set-AzureRmNetworkInterface -NetworkInterface $masterNIC
+
+    $dcosSubmitURI= "http://"+$masterURL+"/marathon/v2/apps/"
+
+    Invoke-WebRequest -Method post -Uri $dcosSubmitURI -ContentType application/json -InFile $dcosInstanceFile # '.\dcos\deployment.json'
+
+}
+else 
+{
+    Write-Output "Loading environment will not be created"
+}
 
 ###############################################
 # Done 
