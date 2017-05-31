@@ -1,27 +1,50 @@
 {
-  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
-  "contentVersion": "1.0.0.0",
-  "parameters": {
-    "dnsNamePrefix": {
-      "value": "demoeventhubsload001"
-    },
-    "agentCount": {
+  "agentprivateCount": {
+    "value": 3
+  },
+  "dnsNamePrefix": {
+    "value": "demoeventhubsload001"
+  },
+  "agentprivateSubnet": {
+    "value": "10.0.0.0/16"
+  },
+  "agentprivateVMSize": {
+    "value": "Standard_D2_v2"
+  },
+  "agentpublicCount": {
+    "value": 1
+  },
+  "agentpublicSubnet": {
+    "value": "10.1.0.0/16"
+  },
+  "agentpublicVMSize": {
+    "value": "Standard_D2_v2"
+  },
+  "dcosBootstrapURL": {
+    "value": "https://dcosio.azureedge.net/dcos/stable/bootstrap/58fd0833ce81b6244fc73bf65b5deb43217b0bd7.bootstrap.tar.xz"
+  },
+  "firstConsecutiveStaticIP": {
+    "value": "172.16.0.5"
+  },
+  "linuxAdminUsername": {
+    "value": "azureuser"
+  },
+  "location": {
+    "value": ""
+  },
+  "masterSubnet": {
+    "value": "172.16.0.0/24"
+  },
+  "masterVMSize": {
+    "value": "Standard_D2_v2"
+  },
+  "masterCount": {
       "value": 1
     },
-    "agentVMSize": {
-      "value": "Standard_D3_v2"
-    },
-    "linuxAdminUsername": {
-      "value": "azureuser"
-    },
-    "orchestratorType": {
-      "value": "DCOS"
-    },
-    "masterCount": {
-      "value": 3
-    },
-    "sshRSAPublicKey": {
-      "value": "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAlwUbj59tAoinx6BqJXID4Ej2Xa5m3tsI3jQpVDOiyniR6hvIS+quuTayc2cyB6w3vyLXdFBwWvdPOuxxNoGpzA+N0k9uBym216oa4uLbxiCmuo6rbTiseYBjS/7Y/NCwLsAPbqyRdbyGVgp7gmRusVS3gEXt8mRGEszSAOYYKXq8vsOvzoq0BgpOypLQojKmkw7+YXleMwYJ8ac9EM6R8w3sECJpPR7dyOQJn6ZA+eHvMft87lo/Q0xu1yS1UB4RDoNwF3E3e4ej+37pAacRr+IHHPrFW8UKV9lmpruDEf/4k8njmatE8Mhwk31v/OGCri2gDAMVE+hQlm1cFjum1Q== rsa-key-20170430"
-    }
+  "sshRSAPublicKey": {
+    "value": "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAlwUbj59tAoinx6BqJXID4Ej2Xa5m3tsI3jQpVDOiyniR6hvIS+quuTayc2cyB6w3vyLXdFBwWvdPOuxxNoGpzA+N0k9uBym216oa4uLbxiCmuo6rbTiseYBjS/7Y/NCwLsAPbqyRdbyGVgp7gmRusVS3gEXt8mRGEszSAOYYKXq8vsOvzoq0BgpOypLQojKmkw7+YXleMwYJ8ac9EM6R8w3sECJpPR7dyOQJn6ZA+eHvMft87lo/Q0xu1yS1UB4RDoNwF3E3e4ej+37pAacRr+IHHPrFW8UKV9lmpruDEf/4k8njmatE8Mhwk31v/OGCri2gDAMVE+hQlm1cFjum1Q== rsa-key-20170430"
+  },
+  "targetEnvironment": {
+    "value": "AzurePublicCloud"
   }
 }

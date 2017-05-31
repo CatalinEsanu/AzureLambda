@@ -74,8 +74,7 @@ Get-AzureRmContext
 ###############################################
 
 
-$runDir=split-path -parent $MyInvocation.MyCommand.Definition # "C:\Users\cesanu\OneDrive for Business\DOCS\Templates\Lambda"
-#$runDir="C:\Users\xxx\Desktop\AzureLambda-master\AzureLambda-master"
+$runDir=split-path -parent $MyInvocation.MyCommand.Definition 
 cd $runDir
 $uniqueId = Get-Random -minimum 10000 -maximum 99999
 $resourceGroupName="Lambda" + $uniqueId + "-RG"
@@ -142,17 +141,25 @@ $hdiScriptActionTemplate = $hdiFilesLoc + "\schedule_job_template.sh" # Do not c
 # DCOS
 $dcosDnsNamePrefix = "ehloader" + $uniqueId
 $dcosAgentCount = 1
-$dcosAgentVMSize = "Standard_A3"
+$dcosAgentVMSize = "Standard_D3_v2"
+$dcosMasterVMSize = "Standard_D3_v2"
 $dcosLinuxAdminUsername = "azureuser"
 $dcosOrchestratorType = "DCOS" # Do not change
 $dcosMasterCount = 1
 $dcosSshRSAPublicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAlwUbj59tAoinx6BqJXID4Ej2Xa5m3tsI3jQpVDOiyniR6hvIS+quuTayc2cyB6w3vyLXdFBwWvdPOuxxNoGpzA+N0k9uBym216oa4uLbxiCmuo6rbTiseYBjS/7Y/NCwLsAPbqyRdbyGVgp7gmRusVS3gEXt8mRGEszSAOYYKXq8vsOvzoq0BgpOypLQojKmkw7+YXleMwYJ8ac9EM6R8w3sECJpPR7dyOQJn6ZA+eHvMft87lo/Q0xu1yS1UB4RDoNwF3E3e4ej+37pAacRr+IHHPrFW8UKV9lmpruDEf/4k8njmatE8Mhwk31v/OGCri2gDAMVE+hQlm1cFjum1Q== rsa-key-20170430"
 $dcosNATRuleName = "HTTPNATRULE"    
-$dcosDeploymentTemplateURI = "https://raw.githubusercontent.com/azure/azure-quickstart-templates/master/101-acs-dcos/azuredeploy.json " # Do not change
+$dcosDeploymentTemplateFile = $runDir +"\ARMTemplates\ARMTemplateDCOS.json"
+#$dcosDeploymentTemplateURI = "https://raw.githubusercontent.com/azure/azure-quickstart-templates/master/101-acs-dcos/azuredeploy.json " # Do not change
 $dcosFilesLoc = $runDir + "\dcos" # Do not change
 $dcosDeploymentTemplateParams = ".\ARMTemplateDCOS.params.json" # Do not change
 $dcosInstanceTemplateFile = $dcosFilesLoc + "\Template\deployInstanceToDCOSTemplate.json" # Do not change
 $dcosInstanceFile = ".\runtime\deployInstanceToDCOS.json" # Do not change
+$dcosBootstrapURL="https://dcosio.azureedge.net/dcos/stable/bootstrap/58fd0833ce81b6244fc73bf65b5deb43217b0bd7.bootstrap.tar.xz" # Do not change
+$dcosAgentprivateSubnet="10.0.0.0/16" 
+$dcosAgentpublicSubnet="10.1.0.0/16" 
+$dcosFirstConsecutiveStaticIP="172.16.0.5" 
+$dcosMasterSubnet="172.16.0.0/24"
+$dcosTargetEnvironment="AzurePublicCloud" # Do not change
 
 
 cp $docdbExecutables\Azrdocdb.dll $PSHome\Modules
@@ -353,17 +360,25 @@ if ($isCreateLoader -eq 0)
 
 
     #$dcosClusterOutput=(New-AzureRmResourceGroupDeployment -Name $loaderDeploymentName -ResourceGroupName $loaderResourceGroupName -TemplateUri $dcosDeploymentTemplateURI -TemplateParameterFile $dcosDeploymentTemplateParams).Outputs
-    $dcosClusterOutput=(New-AzureRmResourceGroupDeployment -Name $loaderDeploymentName -ResourceGroupName $loaderResourceGroupName -TemplateUri $dcosDeploymentTemplateURI `
+
+    $dcosClusterOutput=(New-AzureRmResourceGroupDeployment -Name $loaderDeploymentName -ResourceGroupName $loaderResourceGroupName -TemplateFile $dcosDeploymentTemplateFile `
         -dnsNamePrefix $dcosDnsNamePrefix `
-        -agentCount $dcosAgentCount `
-        -agentVMSize $dcosAgentVMSize `
+        -agentPrivateCount $dcosAgentCount `
+        -agentprivateVMSize $dcosAgentVMSize `
+        -agentpublicCount $dcosAgentCount `
+        -agentpublicVMSize $dcosAgentVMSize `
+        -masterVMSize $dcosMasterVMSize `
         -linuxAdminUsername $dcosLinuxAdminUsername `
-        -orchestratorType $dcosOrchestratorType `
-        -masterCount $dcosMasterCount `
         -sshRSAPublicKey $dcosSshRSAPublicKey `
+        -masterCount $dcosMasterCount `
+        -dcosBootstrapURL $dcosBootstrapURL `
+        -agentprivateSubnet $dcosAgentprivateSubnet `
+        -agentpublicSubnet $dcosAgentpublicSubnet `
+        -firstConsecutiveStaticIP $dcosFirstConsecutiveStaticIP `
+        -masterSubnet $dcosMasterSubnet `
+        -targetEnvironment $dcosTargetEnvironment `
     )
   
-
 
     $masterURL= $dcosClusterOutput.Outputs.masterFQDN.Value
 
@@ -397,7 +412,9 @@ if ($isCreateLoader -eq 0)
 
     $dcosSubmitURI= "http://"+$masterURL+"/marathon/v2/apps/"
 
-    Invoke-WebRequest -Method post -Uri $dcosSubmitURI -ContentType application/json -InFile $dcosInstanceFile # '.\dcos\deployment.json'
+    Invoke-WebRequest -Method post -Uri $dcosSubmitURI -ContentType application/json -InFile $dcosInstanceFile 
+
+    write-output "DCOS URL: " $masterURL
 
 }
 else 

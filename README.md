@@ -24,9 +24,10 @@ It is possible to change the (JSON) data schema written to Event Hubs, without h
 $geoLocation="West Europe"
 ```
 
-*Not all features are available on all regions.
 
 # Usage 
+
+Please run PowerShell as Administrator
 
 ```
 PS > <directory>\invokeLambda.ps1
@@ -41,10 +42,16 @@ https://docs.microsoft.com/en-us/azure/container-service/container-service-intro
 ### Parameters
 ```
 $dcosAgentCount = 1 # Number of agents
-$dcosAgentVMSize = "Standard_A3"
+$dcosAgentVMSize = "Standard_D3_v2"
+$dcosMasterVMSize = "Standard_D3_v2"
 $dcosLinuxAdminUsername = "azureuser"
 $dcosMasterCount = 1 # Use 3 for production
 $dcosSshRSAPublicKey = "ssh-rsa AAAAB3NzaC1yc2EAAAABJQAAAQEAlwUbj59tAoinx6BqJXID4Ej2Xa5m3tsI3jQpVDOiyniR6hvIS+quuTayc2cyB6w3vyLXdFBwWvdPOuxxNoGpzA+N0k9uBym216oa4uLbxiCmuo6rbTiseYBjS/7Y/NCwLsAPbqyRdbyGVgp7gmRusVS3gEXt8mRGEszSAOYYKXq8vsOvzoq0BgpOypLQojKmkw7+YXleMwYJ8ac9EM6R8w3sECJpPR7dyOQJn6ZA+eHvMft87lo/Q0xu1yS1UB4RDoNwF3E3e4ej+37pAacRr+IHHPrFW8UKV9lmpruDEf/4k8njmatE8Mhwk31v/OGCri2gDAMVE+hQlm1cFjum1Q== rsa-key-20170430" # BE SURE TO CHANGE THIS IF YOU ARE GOING TO USE ANY KIND OF PRODUCTION DATA ON THIS CLUSTER
+# Please make sure that the network settings do not collide with other deployments in your subscription
+$dcosAgentprivateSubnet="10.0.0.0/16" 
+$dcosAgentpublicSubnet="10.1.0.0/16" 
+$dcosFirstConsecutiveStaticIP="172.16.0.5" 
+$dcosMasterSubnet="172.16.0.0/24"
 ```
 
 
